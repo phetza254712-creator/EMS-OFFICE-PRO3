@@ -28,7 +28,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -41,24 +40,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -z "${ANDROID_HOME:-}" ]; then
-            if [ -d "/usr/local/lib/android/sdk" ]; then
-              echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
-              echo "/usr/local/lib/android/sdk" >> "$GITHUB_PATH"
-            else
-              echo "Android SDK not found"
-              exit 1
-            fi
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+
+          if [ ! -d "$SDK" ]; then
+            echo "Android SDK directory not found: $SDK"
+            exit 1
           fi
 
-          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "$SDK/platform-tools" >> "$GITHUB_PATH"
 
           SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1)"
 
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found"
+            echo "Android sdkmanager not found"
             exit 1
           fi
 
@@ -91,11 +86,31 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
+            echo "Capacitor configuration not found"
+            exit 1
+          fi
+
           if [ ! -d android ]; then
             npx cap add android
           fi
 
           npx cap sync android
+
+      - name: Verify Android Gradle project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f android/gradlew ]; then
+            echo "Android Gradle wrapper not found"
+            exit 1
+          fi
+
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
+            echo "Android app Gradle configuration not found"
+            exit 1
+          fi
 
       - name: Build APK
         shell: bash
@@ -113,11 +128,12 @@ jobs:
 
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
 
-          if [ ! -f "$APK" ]; then
-            echo "APK file was not generated"
+          if [ ! -s "$APK" ]; then
+            echo "APK was not generated or is empty"
             exit 1
           fi
 
+          echo "APK successfully generated:"
           ls -lh "$APK"
 
       - name: Upload APK
