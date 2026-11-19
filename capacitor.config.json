@@ -1,0 +1,9 @@
+{
+  "appId": "com.bra.emsofficepro",
+  "appName": "EMS Office Pro",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
