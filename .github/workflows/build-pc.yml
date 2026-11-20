@@ -1,0 +1,51 @@
+name: Build EMS Office Pro - Windows PC
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+      - '.github/workflows/build-pc.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Package Windows application
+        run: npm run desktop:build
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: EMS-Office-Pro-Windows
+          path: |
+            dist-electron/*.exe
+            dist-electron/*.msi
+            dist-electron/*.blockmap
+            dist-electron/latest.yml
+          if-no-files-found: error
+          retention-days: 14
