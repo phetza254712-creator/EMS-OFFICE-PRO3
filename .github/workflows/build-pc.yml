@@ -1,20 +1,17 @@
-name: Build EMS Office Pro - Windows PC
+name: EMS Office Pro - Windows PC
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-    paths:
-      - '**'
-      - '.github/workflows/build-pc.yml'
 
 permissions:
   contents: read
 
 jobs:
   build-windows:
-    name: Build Windows Installer
+    name: Build Windows Application
     runs-on: windows-latest
 
     steps:
@@ -35,17 +32,17 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Package Windows application
+      - name: Package Windows Application
         run: npm run desktop:build
 
-      - name: Upload Windows installer
+      - name: Upload Windows Application
         uses: actions/upload-artifact@v4
         with:
           name: EMS-Office-Pro-Windows
           path: |
-            dist-electron/*.exe
-            dist-electron/*.msi
-            dist-electron/*.blockmap
-            dist-electron/latest.yml
+            release/*.exe
+            release/*.msi
+            release/*.blockmap
+            release/latest.yml
           if-no-files-found: error
           retention-days: 14
