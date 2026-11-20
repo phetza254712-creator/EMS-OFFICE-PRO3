@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**'
+      - '.github/workflows/build-pc.yml'
 
 permissions:
   contents: read
@@ -29,20 +32,43 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build application
-        run: npm run build
+      - name: Prepare Electron main file
+        shell: pwsh
+        run: |
+          if (!(Test-Path "main.cjs")) {
+            throw "ไม่พบไฟล์ main.cjs ในโปรเจกต์"
+          }
 
-      - name: Package Windows Application
+          New-Item -ItemType Directory -Force -Path "electron" | Out-Null
+          Copy-Item "main.cjs" "electron/main.cjs" -Force
+
+      - name: Build and Package Windows Application
         run: npm run desktop:build
 
-      - name: Upload Windows Application
+      - name: Verify Windows Installer
+        shell: pwsh
+        run: |
+          if (!(Test-Path "release")) {
+            throw "ไม่พบโฟลเดอร์ release"
+          }
+
+          $installer = Get-ChildItem "release" -Filter "*.exe" -File
+
+          if (!$installer) {
+            throw "ไม่พบไฟล์ติดตั้ง EXE"
+          }
+
+          Write-Host "พบไฟล์ติดตั้ง:"
+          $installer | ForEach-Object {
+            Write-Host $_.FullName
+          }
+
+      - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
           name: EMS-Office-Pro-Windows
           path: |
             release/*.exe
-            release/*.msi
             release/*.blockmap
-            release/latest.yml
           if-no-files-found: error
           retention-days: 14
